@@ -70,7 +70,7 @@ class TestReceivingOrdersFromSpecificUser:
         response = requests.get(Constants.url + Constants.orders, headers=headers)
         assert response.status_code == status_code and 'success' in response.json()
 
-    @allure.title('POST запрос - Получение заказов не авторизованного пользователя')
+    @allure.title('POST запрос - Получение заказов не авторизованного пользователя ')
     @pytest.mark.parametrize(("status_code", "json"), [
         (
                 pytest.param(401, ResponsBody.respons_body_not_auth)

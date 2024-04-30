@@ -2,7 +2,6 @@ from faker import Faker
 import allure
 import requests
 
-#from data import DataTest
 from constant import Constants
 
 

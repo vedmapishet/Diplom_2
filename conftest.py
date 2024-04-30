@@ -1,5 +1,6 @@
 import pytest
 
+
 from data import DataTest
 
 @pytest.fixture()

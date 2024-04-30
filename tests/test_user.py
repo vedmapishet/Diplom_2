@@ -7,7 +7,7 @@ from constant import Constants
 from data import ResponsBody
 
 class TestCreatingUser:
-    @allure.title('POST запрос - Успешное создание пользователя')
+    @allure.title('POST запрос - Успешное создание пользователя ')
     @pytest.mark.parametrize(("data", "status_code"), [
         (
                 pytest.param(DataTest.data_us, 200)
