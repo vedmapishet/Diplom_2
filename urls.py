@@ -1,4 +1,4 @@
-class Constants:
+class Urls:
 
     url = 'https://stellarburgers.nomoreparties.site/api/'
     creat_user = 'auth/register'

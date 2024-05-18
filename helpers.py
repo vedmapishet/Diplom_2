@@ -2,41 +2,20 @@ from faker import Faker
 import allure
 import requests
 
-from constant import Constants
+from urls import Urls
 
 
-@allure.step("Получение json")
-def json_user():
+def generate_payloads():
     fake = Faker()
     email = fake.email()
-    password = fake.password()
     name = fake.name()
-    payload = {
-        "email": email,
-        "password": password,
-        "name": name
-    }
-
-    return payload
-
-@allure.step("Создание пользователя и получение его логина и пароля")
-def log_user():
-    fake = Faker()
-    email = fake.email()
     password = fake.password()
-    name = fake.name()
-    payload = {
-        "email": email,
-        "password": password,
-        "name": name
-    }
+    payload = {'email': email, 'password': password, 'name': name}
+    login_payload = {'email': email, 'password': password}
+    return payload, login_payload
 
-    json_log = {
-        "email": email,
-        "password": password
-    }
-    requests.post(Constants.url + Constants.creat_user, json = payload)
-    return json_log
+
+
 
 @allure.step("Создание пользователя и получение его токена")
 def token_user():
@@ -50,7 +29,7 @@ def token_user():
         "name": name
     }
 
-    request = requests.post(Constants.url + Constants.creat_user, json=payload)
+    request = requests.post(Urls.url + Urls.creat_user, json=payload)
     token_us = request.json()['accessToken']
     return token_us
 

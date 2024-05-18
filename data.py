@@ -1,22 +1,24 @@
-from helpers import log_user
-from helpers import json_user
 from helpers import token_user
 
-from constant import Constants
+from urls import Urls
 
 
 
 
 class DataTest:
-    header = token_user()
-    headers = {
-        "Content-Type": "application/json",
-        "Authorization": header
+    not_headers = {
+        "Content-Type": "application/json"
     }
 
     headers_not_token = {
         "Content-Type": "application/json",
-        "Authorization": Constants.token
+        "Authorization": Urls.token
+    }
+
+    header = token_user()
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": header
     }
 
     data_not_fields_are_not_filled = {
@@ -32,8 +34,6 @@ class DataTest:
         }
     }
 
-    data_us = json_user()
-    data_log_user = log_user()
     data_403_not_name = {
         "email": "test-data@yandex.ru",
         "password": "name",

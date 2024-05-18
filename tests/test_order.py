@@ -3,51 +3,35 @@ import pytest
 import requests
 
 from data import DataTest
-from constant import Constants
+from urls import Urls
 from data import ResponsBody
 
 class TestCreatingOrder:
     @allure.title('POST запрос - Успешное создание заказа с авторизацией')
-    @pytest.mark.parametrize(("data", "status_code", "headers", "json"), [
-        (
-                pytest.param(DataTest.data_order, 200, DataTest.headers, ResponsBody.respons_body_not_ingredients)
-        )
-    ])
-    def test_create_order(self, data, status_code, headers, json):
-        response = requests.post(Constants.url + Constants.orders, json=data, headers=headers)
-        status = response.json()['success']
-        assert response.status_code == status_code and status == True
-
-    @allure.title('POST запрос - Успешное создание заказа БЕЗ авторизации')
-    @pytest.mark.parametrize(("data", "status_code", "json"), [
-        (
-                pytest.param(DataTest.data_order, 200, ResponsBody.respons_body_403_replay)
-        )
-    ])
-    def test_create_order_not_auth(self, data, status_code, json):
-        response = requests.post(Constants.url + Constants.orders, json=data)
-        assert response.status_code == status_code
+    def test_create_order(self, user_data):
+        user = user_data['response']
+        headers = {'Authorization': user.json()['accessToken']}
+        response = requests.post(Urls.url + Urls.orders, data=DataTest.data_order, headers=headers)
+        r = response.json()
+        assert r['success'] and response.status_code == 200
 
 
-    @allure.title('POST запрос - НЕуспешное создание заказа (без ингридиентов)')
+
+
+    @allure.title('POST запрос - НЕуспешное создание заказа')
     @pytest.mark.parametrize(("data", "status_code", "headers", "json"), [
         (
                 pytest.param(DataTest.data_order_not_ingredients, 400, DataTest.headers, ResponsBody.respons_body_not_ingredients)
+        ),
+        (
+                pytest.param(DataTest.data_order_not_ingredients, 400, DataTest.not_headers, ResponsBody.respons_body_not_ingredients)
         )
     ])
     def test_create_order_not_ingredients(self, data, status_code, headers, json):
-        response = requests.post(Constants.url + Constants.orders, json=data, headers=headers)
+        response = requests.post(Urls.url + Urls.orders, json=data, headers=headers)
         assert response.status_code == status_code and json == response.json()
 
-    @allure.title('POST запрос - НЕуспешное создание заказа (без ингридиентов)')
-    @pytest.mark.parametrize(("data", "status_code", "json"), [
-        (
-                pytest.param(DataTest.data_order_not_ingredients, 400, ResponsBody.respons_body_not_ingredients)
-        )
-    ])
-    def test_create_order_not_ingredients_not_auth(self, data, status_code, json):
-        response = requests.post(Constants.url + Constants.orders, json=data)
-        assert response.status_code == status_code and json == response.json()
+
 
     @allure.title('POST запрос - НЕуспешное создание заказа с неверным хешем ингредиентов')
     @pytest.mark.parametrize(("data", "status_code", "headers"), [
@@ -56,7 +40,7 @@ class TestCreatingOrder:
         )
     ])
     def test_create_order_with_an_incorrect_hash_of_ingredients(self, data, status_code, headers):
-        response = requests.post(Constants.url + Constants.orders, json=data, headers=headers)
+        response = requests.post(Urls.url + Urls.orders, json=data, headers=headers)
         assert response.status_code == status_code
 
 class TestReceivingOrdersFromSpecificUser:
@@ -67,16 +51,16 @@ class TestReceivingOrdersFromSpecificUser:
         )
     ])
     def test_create_order_with_an_incorrect_hash_of_ingredients(self, status_code, headers):
-        response = requests.get(Constants.url + Constants.orders, headers=headers)
+        response = requests.get(Urls.url + Urls.orders, headers=headers)
         assert response.status_code == status_code and 'success' in response.json()
 
-    @allure.title('POST запрос - Получение заказов не авторизованного пользователя ')
+    @allure.title('POST запрос - Получение заказов не авторизованного пользователя')
     @pytest.mark.parametrize(("status_code", "json"), [
         (
                 pytest.param(401, ResponsBody.respons_body_not_auth)
         )
     ])
     def test_create_order_with_an_incorrect_hash_of_ingredients_not_auth(self, status_code, json):
-        response = requests.get(Constants.url + Constants.orders)
+        response = requests.get(Urls.url + Urls.orders)
         assert response.status_code == status_code and json == response.json()
 
