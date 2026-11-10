@@ -1,88 +1,115 @@
 import allure
 import pytest
-import requests
 
-from data import DataTest
-from urls import Urls
-from data import ResponsBody
+from data import DataTest, ResponseBody
+
 
 class TestCreatingUser:
-
-    @allure.title('POST запрос - Успешное создание пользователя')
+    @allure.title("POST запрос - Успешное создание пользователя")
     def test_create_user(self, user_data):
-        response = user_data['response']
-        r = response.json()
-        assert response.status_code == 200 and r['success'] and 'Bearer' in r['accessToken']
+        response = user_data["response"]
+        body = response.json()
+        assert response.status_code == 200
+        assert body["success"]
+        assert "Bearer" in body["accessToken"]
 
+    @allure.title(
+        "POST запрос - Создание пользователя с неполными данными "
+        "или уже зарегистрированным логином"
+    )
+    @pytest.mark.parametrize(
+        ("data", "status_code", "expected_body"),
+        [
+            pytest.param(
+                DataTest.data_403_not_name,
+                403,
+                ResponseBody.respons_body_403_not_all_fields,
+                id="без имени",
+            ),
+            pytest.param(
+                DataTest.data_403_not_password,
+                403,
+                ResponseBody.respons_body_403_not_all_fields,
+                id="без пароля",
+            ),
+            pytest.param(
+                DataTest.data_403_not_email,
+                403,
+                ResponseBody.respons_body_403_not_all_fields,
+                id="без email",
+            ),
+            pytest.param(
+                DataTest.data_403_replay,
+                403,
+                ResponseBody.respons_body_403_replay,
+                id="повторная регистрация",
+            ),
+        ],
+    )
+    def test_create_user_fail(self, api_client, data, status_code, expected_body):
+        response = api_client.register_user(data)
+        assert response.status_code == status_code
+        assert response.json() == expected_body
 
-    @allure.title('POST запрос - Тестирование заполнения всех полей и создание пользователя с логином, который уже зарегистрирован')
-    @pytest.mark.parametrize(("data", "status_code", "json"), [
-        (
-                pytest.param(DataTest.data_403_not_name, 403,
-                             ResponsBody.respons_body_403_not_all_fields)
-        ),
-        (
-                pytest.param(DataTest.data_403_not_password, 403,
-                             ResponsBody.respons_body_403_not_all_fields)
-        ),
-        (
-                pytest.param(DataTest.data_403_not_email, 403,
-                             ResponsBody.respons_body_403_not_all_fields)
-        ),
-        (
-                pytest.param(DataTest.data_403_replay, 403,
-                             ResponsBody.respons_body_403_replay)
-        )
-    ])
-    def test_create_user_fail(self, data, status_code, json):
-        response = requests.post(Urls.url + Urls.creat_user, json=data)
-        assert response.status_code == status_code and response.text == json
 
 class TestLoginUser:
-    @allure.title('POST запрос - Успешный логин пользователя')
-    def test_user_login(self, user_data):
-        login_payload = user_data['login_payload']
-        response = requests.post(Urls.url + Urls.login_user, data=login_payload)
-        r = response.json()
-        assert response.status_code == 200 and r['success'] and 'Bearer' in r['accessToken']
+    @allure.title("POST запрос - Успешный логин пользователя")
+    def test_user_login(self, api_client, user_data):
+        response = api_client.login_user(user_data["login_payload"])
+        body = response.json()
+        assert response.status_code == 200
+        assert body["success"]
+        assert "Bearer" in body["accessToken"]
 
-    @allure.title('POST запрос - НЕ успешный логин пользователя')
-    @pytest.mark.parametrize(("data", "status_code", "json"), [
-        (
-                pytest.param(DataTest.log_not_correct_user, 401, ResponsBody.respons_body_not_login)
-        ),
-        (
-                pytest.param(DataTest.log_not_user, 401, ResponsBody.respons_body_not_login)
-        ),
-        (
-                pytest.param(DataTest.log_not_correct_password, 401, ResponsBody.respons_body_not_login)
-        ),
-        (
-                pytest.param(DataTest.log_not_password, 401, ResponsBody.respons_body_not_login)
-        )
-    ])
-    def test_user_login_fail(self, data, status_code, json):
-        response = requests.post(Urls.url + Urls.login_user, json=data)
-        assert response.status_code == status_code and json == response.json()
+    @allure.title("POST запрос - НЕ успешный логин пользователя")
+    @pytest.mark.parametrize(
+        ("data", "status_code", "expected_body"),
+        [
+            pytest.param(
+                DataTest.log_not_correct_user,
+                401,
+                ResponseBody.respons_body_not_login,
+                id="несуществующий пользователь",
+            ),
+            pytest.param(
+                DataTest.log_not_user,
+                401,
+                ResponseBody.respons_body_not_login,
+                id="пустой email",
+            ),
+            pytest.param(
+                DataTest.log_not_correct_password,
+                401,
+                ResponseBody.respons_body_not_login,
+                id="неверный пароль",
+            ),
+            pytest.param(
+                DataTest.log_not_password,
+                401,
+                ResponseBody.respons_body_not_login,
+                id="пустой пароль",
+            ),
+        ],
+    )
+    def test_user_login_fail(self, api_client, data, status_code, expected_body):
+        response = api_client.login_user(data)
+        assert response.status_code == status_code
+        assert response.json() == expected_body
+
 
 class TestUpdateUser:
-    @allure.title('PATCH запрос - Изменение НЕавторизованного пользователя')
-    @pytest.mark.parametrize(("data", "status_code", "json", "token"), [
-        (
-                pytest.param(DataTest.data_update, 401, ResponsBody.respons_body_not_auth, DataTest.headers_not_token)
+    @allure.title("PATCH запрос - Изменение НЕавторизованного пользователя")
+    def test_update_user_not_authorized(self, api_client):
+        response = api_client.update_user(
+            DataTest.data_update, token=DataTest.headers_not_token["Authorization"]
         )
-    ])
-    def test_create_user(self, data, status_code, json, token):
-        response = requests.patch(Urls.url + Urls.auth_user, json=data, headers=token)
-        assert response.status_code == status_code
-        assert json == response.json()
+        assert response.status_code == 401
+        assert response.json() == ResponseBody.respons_body_not_auth
 
-    @allure.title('PATCH запрос - Успешное изменение авторизованного пользователя')
-    @pytest.mark.parametrize(("data", "status_code", "headers"), [
-        (
-                pytest.param(DataTest.data_update, 200, DataTest.headers)
+    @allure.title("PATCH запрос - Успешное изменение авторизованного пользователя")
+    def test_update_user(self, api_client, user_data):
+        response = api_client.update_user(
+            DataTest.data_update, token=user_data["token"]
         )
-    ])
-    def test_create_user(self, data, status_code, headers):
-        response = requests.patch(Urls.url + Urls.auth_user, headers = headers, json=data)
-        assert response.status_code == status_code and response.json()['success'] is True
+        assert response.status_code == 200
+        assert response.json()["success"] is True
